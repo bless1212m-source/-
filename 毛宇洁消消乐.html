@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>毛宇洁消消乐</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  
+  <!-- 配置Tailwind -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            pink: '#FF69B4',    // 粉色
+            skyblue: '#87CEEB', // 天蓝色
+            green: '#32CD32',   // 绿色
+            background: '#FFEEF2', // 浅粉色背景
+          },
+          fontFamily: {
+            cute: ['"Comic Sans MS"', '"Marker Felt"', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .text-shadow {
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+      }
+      .cell-animation {
+        transition: all 0.3s ease;
+      }
+      .pop-animation {
+        animation: pop 0.3s ease-in-out;
+      }
+      .drag-active {
+        opacity: 0.7;
+        transform: scale(1.1);
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+      }
+      .drop-target {
+        border: 2px dashed #9370DB;
+        background-color: rgba(147, 112, 219, 0.2);
+      }
+    }
+    
+    @keyframes pop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); }
+    }
+  </style>
+</head>
+
+<body class="bg-background min-h-screen font-cute overflow-x-hidden">
+  <div class="container mx-auto px-4 py-8">
+    <!-- 游戏标题 -->
+    <div class="text-center mb-6">
+      <h1 class="text-[clamp(2rem,5vw,3.5rem)] font-bold text-pink text-shadow mb-2">
+        毛宇洁消消乐
+      </h1>
+      <p class="text-lg text-pink-700">将相同文字且相同颜色的「毛、宇、洁」连成一线即可消除得分！</p>
+    </div>
+    
+    <!-- 游戏信息 -->
+    <div class="flex flex-wrap justify-center gap-8 mb-8">
+      <div class="bg-white rounded-xl p-4 shadow-lg flex items-center">
+        <i class="fa fa-star text-yellow-400 text-2xl mr-3"></i>
+        <div>
+          <p class="text-sm opacity-70">当前分数</p>
+          <p id="score" class="text-2xl font-bold">0</p>
+        </div>
+      </div>
+      
+      <div class="bg-white rounded-xl p-4 shadow-lg flex items-center">
+        <i class="fa fa-clock-o text-skyblue text-2xl mr-3"></i>
+        <div>
+          <p class="text-sm opacity-70">剩余时间</p>
+          <p id="time" class="text-2xl font-bold">120</p>
+        </div>
+      </div>
+      
+      <div class="bg-white rounded-xl p-4 shadow-lg flex items-center">
+        <i class="fa fa-exchange text-green text-2xl mr-3"></i>
+        <div>
+          <p class="text-sm opacity-70">移动次数</p>
+          <p id="moves" class="text-2xl font-bold">0</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 颜色图例 -->
+    <div class="flex justify-center gap-6 mb-8 flex-wrap">
+      <div class="flex items-center">
+        <div class="w-8 h-8 bg-pink rounded-full mr-2 flex items-center justify-center text-white font-bold">毛</div>
+        <div class="w-8 h-8 bg-pink rounded-full mr-2 flex items-center justify-center text-white font-bold">毛</div>
+        <div class="w-8 h-8 bg-pink rounded-full mr-2 flex items-center justify-center text-white font-bold">毛</div>
+        <span>可消除</span>
+      </div>
+      <div class="flex items-center">
+        <div class="w-8 h-8 bg-skyblue rounded-full mr-2 flex items-center justify-center text-white font-bold">宇</div>
+        <div class="w-8 h-8 bg-skyblue rounded-full mr-2 flex items-center justify-center text-white font-bold">宇</div>
+        <div class="w-8 h-8 bg-skyblue rounded-full mr-2 flex items-center justify-center text-white font-bold">宇</div>
+        <span>可消除</span>
+      </div>
+      <div class="flex items-center">
+        <div class="w-8 h-8 bg-green rounded-full mr-2 flex items-center justify-center text-white font-bold">洁</div>
+        <div class="w-8 h-8 bg-green rounded-full mr-2 flex items-center justify-center text-white font-bold">洁</div>
+        <div class="w-8 h-8 bg-green rounded-full mr-2 flex items-center justify-center text-white font-bold">洁</div>
+        <span>可消除</span>
+      </div>
+    </div>
+    
+    <!-- 游戏控制按钮 -->
+    <div class="flex justify-center gap-4 mb-8">
+      <button id="startBtn" class="bg-pink hover:bg-pink-600 text-white px-6 py-3 rounded-full shadow-lg transition-all transform hover:scale-105">
+        <i class="fa fa-play mr-2"></i>开始游戏
+      </button>
+      <button id="resetBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-full shadow-lg transition-all transform hover:scale-105" disabled>
+        <i class="fa fa-refresh mr-2"></i>重新开始
+      </button>
+    </div>
+    
+    <!-- 游戏区域 -->
+    <div class="flex justify-center">
+      <div id="gameBoard" class="bg-white rounded-2xl p-4 shadow-xl grid grid-cols-6 gap-2 w-full max-w-2xl aspect-square">
+        <!-- 游戏格子将通过JS动态生成 -->
+      </div>
+    </div>
+    
+    <!-- 游戏说明 -->
+    <div class="mt-8 text-center max-w-md mx-auto bg-white/80 p-4 rounded-xl">
+      <h3 class="font-bold text-lg mb-2">游戏规则</h3>
+      <p>拖动或点击交换相邻的字块，当横向或纵向出现三个相同文字且相同颜色的「毛」、「宇」或「洁」时，即可消除并得分。游戏时长为2分钟，加油哦！</p>
+    </div>
+    
+    <!-- 游戏结束弹窗 -->
+    <div id="gameOverModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+      <div class="bg-white rounded-2xl p-8 max-w-md w-full text-center">
+        <i class="fa fa-trophy text-yellow-500 text-5xl mb-4"></i>
+        <h2 class="text-2xl font-bold mb-2">游戏结束！</h2>
+        <p class="mb-4">你的最终得分是: <span id="finalScore" class="text-pink font-bold text-xl">0</span></p>
+        <button id="playAgainBtn" class="bg-pink hover:bg-pink-600 text-white px-6 py-3 rounded-full shadow-lg transition-all transform hover:scale-105">
+          再来一局
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 游戏配置
+    const config = {
+      rows: 6,
+      cols: 6,
+      items: ['毛', '宇', '洁'],
+      colors: ['bg-pink', 'bg-skyblue', 'bg-green'], // 三种固定颜色
+      timeLimit: 120, // 2分钟
+      pointsPerMatch: 10 // 每消除一个得10分
+    };
+    
+    // 游戏状态
+    const gameState = {
+      board: [], // 每个元素是 { item: '毛'|'宇'|'洁', color: 'bg-xxx' }
+      score: 0,
+      timeLeft: config.timeLimit,
+      moves: 0,
+      isPlaying: false,
+      draggedCell: null,
+      selectedCell: null, // 用于点击交换
+      timer: null
+    };
+    
+    // DOM元素
+    const gameBoard = document.getElementById('gameBoard');
+    const scoreDisplay = document.getElementById('score');
+    const timeDisplay = document.getElementById('time');
+    const movesDisplay = document.getElementById('moves');
+    const startBtn = document.getElementById('startBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const gameOverModal = document.getElementById('gameOverModal');
+    const finalScoreDisplay = document.getElementById('finalScore');
+    const playAgainBtn = document.getElementById('playAgainBtn');
+    
+    // 初始化游戏板
+    function initializeBoard() {
+      gameState.board = [];
+      for (let i = 0; i < config.rows; i++) {
+        const row = [];
+        for (let j = 0; j < config.cols; j++) {
+          // 随机选择一个字和一种颜色
+          let item, color;
+          do {
+            item = config.items[Math.floor(Math.random() * config.items.length)];
+            color = config.colors[Math.floor(Math.random() * config.colors.length)];
+            row[j] = { item, color };
+          } while (checkInitialMatches(i, j, row));
+        }
+        gameState.board.push(row);
+      }
+      renderBoard();
+    }
+    
+    // 检查初始是否有三连（避免游戏开始就有可消除的组合）
+    function checkInitialMatches(row, col, currentRow) {
+      const current = currentRow[col];
+      
+      // 检查水平方向
+      if (col >= 2 && 
+          currentRow[col - 1].item === current.item && 
+          currentRow[col - 1].color === current.color &&
+          currentRow[col - 2].item === current.item && 
+          currentRow[col - 2].color === current.color) {
+        return true;
+      }
+      
+      // 检查垂直方向
+      if (row >= 2 && 
+          gameState.board[row - 1][col].item === current.item && 
+          gameState.board[row - 1][col].color === current.color &&
+          gameState.board[row - 2][col].item === current.item && 
+          gameState.board[row - 2][col].color === current.color) {
+        return true;
+      }
+      
+      return false;
+    }
+    
+    // 渲染游戏板
+    function renderBoard() {
+      gameBoard.innerHTML = '';
+      gameBoard.style.gridTemplateColumns = `repeat(${config.cols}, 1fr)`;
+      
+      for (let i = 0; i < config.rows; i++) {
+        for (let j = 0; j < config.cols; j++) {
+          const cellData = gameState.board[i][j];
+          const cell = document.createElement('div');
+          
+          // 基础样式
+          let classNames = `${cellData.color} rounded-lg flex items-center justify-center text-2xl md:text-3xl font-bold shadow-md transition-all`;
+          // 如果是选中状态，添加选中样式
+          if (gameState.selectedCell && gameState.selectedCell.row === i && gameState.selectedCell.col === j) {
+            classNames += ' ring-4 ring-purple-500';
+          }
+          
+          cell.className = classNames;
+          cell.dataset.row = i;
+          cell.dataset.col = j;
+          cell.draggable = gameState.isPlaying;
+          
+          // 添加文字
+          const text = document.createElement('span');
+          text.textContent = cellData.item;
+          text.className = 'text-white text-shadow';
+          cell.appendChild(text);
+          
+          // 添加拖拽事件监听
+          cell.addEventListener('dragstart', (e) => handleDragStart(e, i, j));
+          cell.addEventListener('dragover', handleDragOver);
+          cell.addEventListener('dragenter', (e) => handleDragEnter(e, i, j));
+          cell.addEventListener('dragleave', () => handleDragLeave());
+          cell.addEventListener('drop', (e) => handleDrop(e, i, j));
+          cell.addEventListener('dragend', handleDragEnd);
+          
+          // 添加点击事件（备选交换方式）
+          cell.addEventListener('click', () => handleCellClick(i, j));
+          
+          gameBoard.appendChild(cell);
+        }
+      }
+    }
+    
+    // 拖拽开始
+    function handleDragStart(e, row, col) {
+      gameState.draggedCell = { row, col };
+      const cell = e.target.closest('[data-row]');
+      if (cell) {
+        cell.classList.add('drag-active');
+        // 设置拖拽数据
+        e.dataTransfer.setData('text/plain', JSON.stringify({ row, col }));
+        e.dataTransfer.effectAllowed = 'move';
+      }
+    }
+    
+    // 拖拽经过
+    function handleDragOver(e) {
+      e.preventDefault(); // 允许放置
+      e.dataTransfer.dropEffect = 'move';
+    }
+    
+    // 拖拽进入
+    function handleDragEnter(e, row, col) {
+      e.preventDefault();
+      if (gameState.draggedCell) {
+        // 只有相邻单元格才显示放置目标样式
+        if (isAdjacent(gameState.draggedCell, { row, col })) {
+          this.classList.add('drop-target');
+        }
+      }
+    }
+    
+    // 拖拽离开
+    function handleDragLeave() {
+      this.classList.remove('drop-target');
+    }
+    
+    // 放置
+    function handleDrop(e, row, col) {
+      e.preventDefault();
+      this.classList.remove('drop-target');
+      
+      if (!gameState.draggedCell) return;
+      
+      // 获取拖拽源信息
+      const draggedData = JSON.parse(e.dataTransfer.getData('text/plain'));
+      const draggedRow = draggedData.row;
+      const draggedCol = draggedData.col;
+      
+      // 检查是否是同一个单元格
+      if (draggedRow === row && draggedCol === col) return;
+      
+      // 检查是否相邻
+      if (isAdjacent({ row: draggedRow, col: draggedCol }, { row, col })) {
+        // 执行交换
+        performSwap({ row: draggedRow, col: draggedCol }, { row, col });
+      }
+    }
+    
+    // 拖拽结束
+    function handleDragEnd() {
+      // 移除所有拖拽相关样式
+      document.querySelectorAll('.drag-active').forEach(cell => {
+        cell.classList.remove('drag-active');
+      });
+      document.querySelectorAll('.drop-target').forEach(cell => {
+        cell.classList.remove('drop-target');
+      });
+      gameState.draggedCell = null;
+    }
+    
+    // 处理单元格点击（备选交换方式）
+    function handleCellClick(row, col) {
+      if (!gameState.isPlaying) return;
+      
+      // 如果没有选中的单元格，选中当前单元格
+      if (!gameState.selectedCell) {
+        gameState.selectedCell = { row, col };
+        renderBoard(); // 重新渲染以显示选中状态
+        return;
+      }
+      
+      // 如果点击的是已选中的单元格，取消选中
+      if (gameState.selectedCell.row === row && gameState.selectedCell.col === col) {
+        gameState.selectedCell = null;
+        renderBoard();
+        return;
+      }
+      
+      // 检查是否相邻
+      if (isAdjacent(gameState.selectedCell, { row, col })) {
+        // 执行交换
+        performSwap(gameState.selectedCell, { row, col });
+        gameState.selectedCell = null;
+      } else {
+        // 不相邻，选中新的单元格
+        gameState.selectedCell = { row, col };
+      }
+      renderBoard();
+    }
+    
+    // 检查两个单元格是否相邻
+    function isAdjacent(cell1, cell2) {
+      const rowDiff = Math.abs(cell1.row - cell2.row);
+      const colDiff = Math.abs(cell1.col - cell2.col);
+      // 相邻条件：行差为1且列相同，或列差为1且行相同
+      return (rowDiff === 1 && colDiff === 0) || (rowDiff === 0 && colDiff === 1);
+    }
+    
+    // 执行交换并检查匹配
+    function performSwap(cell1, cell2) {
+      // 保存原始值用于可能的回滚
+      const originalValue1 = { ...gameState.board[cell1.row][cell1.col] };
+      const originalValue2 = { ...gameState.board[cell2.row][cell2.col] };
+      
+      // 交换单元格内容
+      gameState.board[cell1.row][cell1.col] = originalValue2;
+      gameState.board[cell2.row][cell2.col] = originalValue1;
+      renderBoard();
+      
+      // 检查是否有匹配（文字和颜色都相同）
+      const matches = findMatches();
+      if (matches.length > 0) {
+        // 有匹配，处理消除
+        gameState.moves++;
+        updateStats();
+        setTimeout(() => {
+          processMatches(matches);
+        }, 300);
+      } else {
+        // 没有匹配，交换回来
+        setTimeout(() => {
+          gameState.board[cell1.row][cell1.col] = originalValue1;
+          gameState.board[cell2.row][cell2.col] = originalValue2;
+          renderBoard();
+        }, 300);
+      }
+    }
+    
+    // 寻找匹配的三连（文字和颜色都相同）
+    function findMatches() {
+      const matches = [];
+      
+      // 检查水平方向的匹配
+      for (let i = 0; i < config.rows; i++) {
+        for (let j = 0; j < config.cols - 2; j++) {
+          const current = gameState.board[i][j];
+          const next1 = gameState.board[i][j + 1];
+          const next2 = gameState.board[i][j + 2];
+          
+          if (current && next1 && next2 &&
+              current.item === next1.item && current.item === next2.item &&
+              current.color === next1.color && current.color === next2.color) {
+            // 添加这一组匹配
+            matches.push([
+              { row: i, col: j },
+              { row: i, col: j + 1 },
+              { row: i, col: j + 2 }
+            ]);
+            
+            // 跳过已匹配的单元格，避免重复
+            j += 2;
+          }
+        }
+      }
+      
+      // 检查垂直方向的匹配
+      for (let j = 0; j < config.cols; j++) {
+        for (let i = 0; i < config.rows - 2; i++) {
+          const current = gameState.board[i][j];
+          const below1 = gameState.board[i + 1][j];
+          const below2 = gameState.board[i + 2][j];
+          
+          if (current && below1 && below2 &&
+              current.item === below1.item && current.item === below2.item &&
+              current.color === below1.color && current.color === below2.color) {
+            // 添加这一组匹配
+            matches.push([
+              { row: i, col: j },
+              { row: i + 1, col: j },
+              { row: i + 2, col: j }
+            ]);
+            
+            // 跳过已匹配的单元格，避免重复
+            i += 2;
+          }
+        }
+      }
+      
+      return matches;
+    }
+    
+    // 处理匹配的消除
+    function processMatches(matches) {
+      // 标记要消除的单元格
+      const cellsToClear = new Set();
+      matches.forEach(match => {
+        match.forEach(cell => {
+          cellsToClear.add(`${cell.row},${cell.col}`);
+        });
+      });
+      
+      // 增加分数
+      gameState.score += cellsToClear.size * config.pointsPerMatch;
+      updateStats();
+      
+      // 闪烁动画后清除单元格
+      cellsToClear.forEach(key => {
+        const [row, col] = key.split(',').map(Number);
+        const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+        if (cell) {
+          cell.classList.add('pop-animation', 'opacity-0');
+        }
+      });
+      
+      // 延迟后清除并填充新单元格
+      setTimeout(() => {
+        clearMatchedCells(cellsToClear);
+        dropCells();
+        fillEmptyCells();
+        
+        // 检查是否有新的匹配（连锁反应）
+        const newMatches = findMatches();
+        if (newMatches.length > 0) {
+          setTimeout(() => processMatches(newMatches), 500);
+        }
+      }, 300);
+    }
+    
+    // 清除匹配的单元格
+    function clearMatchedCells(cellsToClear) {
+      cellsToClear.forEach(key => {
+        const [row, col] = key.split(',').map(Number);
+        gameState.board[row][col] = null;
+      });
+    }
+    
+    // 使单元格下落填补空白
+    function dropCells() {
+      for (let j = 0; j < config.cols; j++) {
+        for (let i = config.rows - 1; i > 0; i--) {
+          if (gameState.board[i][j] === null) {
+            // 寻找上方第一个非空单元格
+            for (let k = i - 1; k >= 0; k--) {
+              if (gameState.board[k][j] !== null) {
+                // 下落
+                gameState.board[i][j] = gameState.board[k][j];
+                gameState.board[k][j] = null;
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    // 填充空白单元格
+    function fillEmptyCells() {
+      for (let j = 0; j < config.cols; j++) {
+        for (let i = 0; i < config.rows; i++) {
+          if (gameState.board[i][j] === null) {
+            // 随机填充一个新的字和颜色
+            const item = config.items[Math.floor(Math.random() * config.items.length)];
+            const color = config.colors[Math.floor(Math.random() * config.colors.length)];
+            gameState.board[i][j] = { item, color };
+          }
+        }
+      }
+      renderBoard();
+    }
+    
+    // 更新游戏状态显示
+    function updateStats() {
+      scoreDisplay.textContent = gameState.score;
+      timeDisplay.textContent = gameState.timeLeft;
+      movesDisplay.textContent = gameState.moves;
+    }
+    
+    // 开始游戏
+    function startGame() {
+      gameState.score = 0;
+      gameState.timeLeft = config.timeLimit;
+      gameState.moves = 0;
+      gameState.isPlaying = true;
+      gameState.draggedCell = null;
+      gameState.selectedCell = null;
+      
+      initializeBoard();
+      updateStats();
+      
+      // 启动计时器
+      if (gameState.timer) clearInterval(gameState.timer);
+      gameState.timer = setInterval(() => {
+        gameState.timeLeft--;
+        timeDisplay.textContent = gameState.timeLeft;
+        
+        if (gameState.timeLeft <= 0) {
+          endGame();
+        }
+      }, 1000);
+      
+      // 更新按钮状态
+      startBtn.disabled = true;
+      startBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      resetBtn.disabled = false;
+      resetBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+    
+    // 结束游戏
+    function endGame() {
+      gameState.isPlaying = false;
+      clearInterval(gameState.timer);
+      
+      // 使所有单元格不可拖拽
+      document.querySelectorAll('#gameBoard > div').forEach(cell => {
+        cell.draggable = false;
+      });
+      
+      // 显示游戏结束弹窗
+      finalScoreDisplay.textContent = gameState.score;
+      gameOverModal.classList.remove('hidden');
+      
+      // 更新按钮状态
+      startBtn.disabled = false;
+      startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      resetBtn.disabled = true;
+      resetBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    }
+    
+    // 重置游戏
+    function resetGame() {
+      clearInterval(gameState.timer);
+      startGame();
+    }
+    
+    // 事件监听
+    startBtn.addEventListener('click', startGame);
+    resetBtn.addEventListener('click', resetGame);
+    playAgainBtn.addEventListener('click', () => {
+      gameOverModal.classList.add('hidden');
+      startGame();
+    });
+    
+    // 初始化页面
+    window.addEventListener('DOMContentLoaded', () => {
+      initializeBoard();
+    });
+  </script>
+</body>
+</html>
