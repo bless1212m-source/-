@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>毛宇洁消消乐</title>
+  <title>魏秋霞消消乐</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
   
@@ -61,9 +61,9 @@
     <!-- 游戏标题 -->
     <div class="text-center mb-6">
       <h1 class="text-[clamp(2rem,5vw,3.5rem)] font-bold text-pink text-shadow mb-2">
-        毛宇洁消消乐
+        魏秋霞消消乐
       </h1>
-      <p class="text-lg text-pink-700">将相同文字且相同颜色的「毛、宇、洁」连成一线即可消除得分！</p>
+      <p class="text-lg text-pink-700">将相同文字且相同颜色的「魏、秋、霞」连成一线即可消除得分！</p>
     </div>
     
     <!-- 游戏信息 -->
@@ -96,9 +96,9 @@
     <!-- 颜色图例 -->
     <div class="flex justify-center gap-6 mb-8 flex-wrap">
       <div class="flex items-center">
-        <div class="w-8 h-8 bg-pink rounded-full mr-2 flex items-center justify-center text-white font-bold">毛</div>
-        <div class="w-8 h-8 bg-pink rounded-full mr-2 flex items-center justify-center text-white font-bold">毛</div>
-        <div class="w-8 h-8 bg-pink rounded-full mr-2 flex items-center justify-center text-white font-bold">毛</div>
+        <div class="w-8 h-8 bg-pink rounded-full mr-2 flex items-center justify-center text-white font-bold">魏</div>
+        <div class="w-8 h-8 bg-pink rounded-full mr-2 flex items-center justify-center text-white font-bold">魏</div>
+        <div class="w-8 h-8 bg-pink rounded-full mr-2 flex items-center justify-center text-white font-bold">魏</div>
         <span>可消除</span>
       </div>
       <div class="flex items-center">
@@ -135,7 +135,7 @@
     <!-- 游戏说明 -->
     <div class="mt-8 text-center max-w-md mx-auto bg-white/80 p-4 rounded-xl">
       <h3 class="font-bold text-lg mb-2">游戏规则</h3>
-      <p>拖动或点击交换相邻的字块，当横向或纵向出现三个相同文字且相同颜色的「毛」、「宇」或「洁」时，即可消除并得分。游戏时长为2分钟，加油哦！</p>
+      <p>拖动或点击交换相邻的字块，当横向或纵向出现三个相同文字且相同颜色的「魏」、「秋」或「霞」时，即可消除并得分。游戏时长为2分钟，加油哦！</p>
     </div>
     
     <!-- 游戏结束弹窗 -->
@@ -156,7 +156,7 @@
     const config = {
       rows: 6,
       cols: 6,
-      items: ['毛', '宇', '洁'],
+      items: ['魏', '秋', '霞'],
       colors: ['bg-pink', 'bg-skyblue', 'bg-green'], // 三种固定颜色
       timeLimit: 120, // 2分钟
       pointsPerMatch: 10 // 每消除一个得10分
@@ -164,7 +164,7 @@
     
     // 游戏状态
     const gameState = {
-      board: [], // 每个元素是 { item: '毛'|'宇'|'洁', color: 'bg-xxx' }
+      board: [], // 每个元素是 { item: '魏'|'秋'|'霞', color: 'bg-xxx' }
       score: 0,
       timeLeft: config.timeLimit,
       moves: 0,
